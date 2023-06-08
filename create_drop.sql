@@ -11,7 +11,6 @@ DROP TABLE IF EXISTS Test_Projet.library;
 DROP TABLE IF EXISTS Test_Projet.client;
 
 
--- Create tables
 CREATE TABLE IF NOT EXISTS Test_Projet.client (
   clientId INT PRIMARY KEY AUTO_INCREMENT,
   firstName VARCHAR(50) NOT NULL,
@@ -46,15 +45,14 @@ CREATE TABLE IF NOT EXISTS Test_Projet.userAuthentication (
 );
 
 
-
 CREATE TABLE IF NOT EXISTS Test_Projet.payment (
   paymentId INT PRIMARY KEY AUTO_INCREMENT,
-  clientId INT NOT NULL,
+  orderId INT NOT NULL,
   cardNumber VARCHAR(16) NOT NULL,
   expiration DATE NOT NULL,
-  CONSTRAINT fk_payment_client
-    FOREIGN KEY (clientId)
-    REFERENCES Test_Projet.client (clientId)
+  CONSTRAINT fk_payment_order
+    FOREIGN KEY (orderId)
+    REFERENCES Test_Projet.clientOrder (orderId)
 );
 
 
@@ -93,6 +91,5 @@ CREATE TABLE IF NOT EXISTS Test_Projet.shoppingCart (
   FOREIGN KEY (clientId) REFERENCES Test_Projet.client(clientId),
   FOREIGN KEY (ean_isbn13) REFERENCES Test_Projet.library(ean_isbn13)
 );
-
 
 
