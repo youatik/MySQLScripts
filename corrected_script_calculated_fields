@@ -1,4 +1,7 @@
+
 CREATE SCHEMA IF NOT EXISTS jdbc;
+
+SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop tables
 DROP TABLE IF EXISTS jdbc.shoppingCart;
@@ -8,6 +11,8 @@ DROP TABLE IF EXISTS jdbc.payment;
 DROP TABLE IF EXISTS jdbc.userAuthentication;
 DROP TABLE IF EXISTS jdbc.library;
 DROP TABLE IF EXISTS jdbc.client;
+
+SET FOREIGN_KEY_CHECKS = 1;
 
 CREATE TABLE IF NOT EXISTS jdbc.client (
   clientId INT PRIMARY KEY AUTO_INCREMENT,
@@ -40,6 +45,16 @@ CREATE TABLE IF NOT EXISTS jdbc.userAuthentication (
     REFERENCES jdbc.client (clientId)
 );
 
+
+
+CREATE TABLE IF NOT EXISTS jdbc.clientOrder (
+  orderId INT PRIMARY KEY AUTO_INCREMENT,
+  clientId INT,
+  orderDate DATE,
+  totalAmount DECIMAL(10,2), -- doesn't need to be calculated, will be added
+  FOREIGN KEY (clientId) REFERENCES jdbc.client(clientId)
+);
+
 CREATE TABLE IF NOT EXISTS jdbc.payment (
   paymentId INT PRIMARY KEY AUTO_INCREMENT,
   orderId INT NOT NULL,
@@ -50,35 +65,41 @@ CREATE TABLE IF NOT EXISTS jdbc.payment (
     REFERENCES jdbc.clientOrder (orderId)
 );
 
-CREATE TABLE IF NOT EXISTS jdbc.clientOrder (
-  orderId INT PRIMARY KEY AUTO_INCREMENT,
-  clientId INT,
-  orderDate DATE,
-  totalAmount DECIMAL(10,2),
-  FOREIGN KEY (clientId) REFERENCES jdbc.client(clientId)
-);
-
 CREATE TABLE IF NOT EXISTS jdbc.orderItem (
-  id INT PRIMARY KEY AUTO_INCREMENT,
+  id INT PRIMARY KEY AUTO_INCREMENT, -- probably an error here? 
   orderId INT,
   ean_isbn13 BIGINT,
   quantity INT,
-  price DECIMAL(10,2) GENERATED ALWAYS AS (SELECT price FROM jdbc.library WHERE ean_isbn13 = jdbc.orderItem.ean_isbn13),
+  price DECIMAL(10,2), -- doesn't need to be added will be calculated
   clientId INT,
   FOREIGN KEY (orderId) REFERENCES jdbc.clientOrder(orderId),
   FOREIGN KEY (ean_isbn13) REFERENCES jdbc.library(ean_isbn13)
 );
 
+DELIMITER //
+
+CREATE TRIGGER jdbc.calculate_price
+BEFORE INSERT ON jdbc.orderItem
+FOR EACH ROW
+BEGIN
+    SET NEW.price = (SELECT price FROM jdbc.library WHERE ean_isbn13 = NEW.ean_isbn13);
+END //
+
+DELIMITER ;
+
+
 CREATE TABLE IF NOT EXISTS jdbc.shoppingCart (
   id INT PRIMARY KEY AUTO_INCREMENT,
   clientId INT,
   ean_isbn13 BIGINT,
-  quantity INT,
-  FOREIGN KEY (clientId) REFERENCES Test_Projet.client(clientId),
-  FOREIGN KEY (ean_isbn13) REFERENCES Test_Projet.library(ean_isbn13)
+  quantity INT, 
+  FOREIGN KEY (clientId) REFERENCES jdbc.client(clientId),
+  FOREIGN KEY (ean_isbn13) REFERENCES jdbc.library(ean_isbn13)
 );
 
-CREATE TRIGGER calculate_total_amount
+DELIMITER //
+
+CREATE TRIGGER jdbc.calculate_total_amount
 AFTER INSERT ON jdbc.orderItem
 FOR EACH ROW
 BEGIN
@@ -86,3 +107,5 @@ BEGIN
   SET totalAmount = (SELECT SUM(price * quantity) FROM jdbc.orderItem WHERE orderId = NEW.orderId)
   WHERE orderId = NEW.orderId;
 END;
+
+DELIMITER ;
