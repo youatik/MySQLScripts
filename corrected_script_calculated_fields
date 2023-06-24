@@ -1,3 +1,5 @@
+CREATE SCHEMA IF NOT EXISTS jdbc;
+
 -- Drop tables
 DROP TABLE IF EXISTS jdbc.shoppingCart;
 DROP TABLE IF EXISTS jdbc.orderItem;
